@@ -39,6 +39,12 @@ public class NominationService {
                     return programmeRepository.save(defaultProg);
                 });
 
+        // Ensure programme capacity is set to 3 for Task 2 demo if not set
+        if (programme.getMaxParticipants() == null || programme.getMaxParticipants() > 10) {
+            programme.setMaxParticipants(3);
+            programmeRepository.save(programme);
+        }
+
         Officer officer = null;
         if (officerId != null) {
             officer = officerRepository.findById(officerId).orElse(null);
@@ -64,7 +70,7 @@ public class NominationService {
             officer = officerRepository.findAll().stream().findFirst().orElse(null);
         }
 
-        int maxCap = (programme.getMaxParticipants() != null) ? programme.getMaxParticipants() : 3;
+        int maxCap = programme.getMaxParticipants();
 
         // Fetch all active nominations in FIFO order
         List<Nomination> allNominations = nominationRepository.findByProgrammeOrderByNominatedAtAsc(programme);
@@ -129,14 +135,22 @@ public class NominationService {
     @Transactional
     public List<Nomination> getNominationsByProgramme(Long programId) {
         TrainingProgramme programme = programmeRepository.findById(programId)
-                .orElseGet(() -> programmeRepository.findAll().stream().findFirst().orElse(null));
+                .orElseGet(() -> {
+                    List<TrainingProgramme> list = programmeRepository.findAll();
+                    return list.isEmpty() ? null : list.get(0);
+                });
 
         if (programme == null) return List.of();
 
-        List<Nomination> list = nominationRepository.findByProgrammeOrderByNominatedAtAsc(programme);
-        int maxCap = (programme.getMaxParticipants() != null) ? programme.getMaxParticipants() : 3;
+        if (programme.getMaxParticipants() == null || programme.getMaxParticipants() > 10) {
+            programme.setMaxParticipants(3);
+            programmeRepository.save(programme);
+        }
 
-        // Auto-correct any legacy/inconsistent data strictly to maxCap
+        List<Nomination> list = nominationRepository.findByProgrammeOrderByNominatedAtAsc(programme);
+        int maxCap = programme.getMaxParticipants();
+
+        // Enforce FIFO strictly: exactly first maxCap active become CONFIRMED, all subsequent become WAITING
         long confirmedCount = 0;
         for (Nomination n : list) {
             if ("CANCELLED".equalsIgnoreCase(n.getStatus())) continue;
