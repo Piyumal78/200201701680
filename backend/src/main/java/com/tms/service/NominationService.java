@@ -25,7 +25,7 @@ public class NominationService {
     @Autowired
     private OfficerRepository officerRepository;
 
-    // 1. Submit nomination with FIFO capacity check
+    // 1. Submit nomination with strict FIFO capacity enforcement
     @Transactional
     public Nomination addNomination(Long programId, Long officerId, String officerName) {
         TrainingProgramme programme = programmeRepository.findById(programId)
@@ -64,23 +64,27 @@ public class NominationService {
             officer = officerRepository.findAll().stream().findFirst().orElse(null);
         }
 
-        // Check if officer already has an existing nomination for this programme
-        List<Nomination> existingList = nominationRepository.findByProgrammeOrderByNominatedAtAsc(programme);
+        int maxCap = (programme.getMaxParticipants() != null) ? programme.getMaxParticipants() : 3;
+
+        // Fetch all active nominations in FIFO order
+        List<Nomination> allNominations = nominationRepository.findByProgrammeOrderByNominatedAtAsc(programme);
+
+        // Count current confirmed seats strictly
+        long confirmedCount = allNominations.stream()
+                .filter(n -> "CONFIRMED".equalsIgnoreCase(n.getStatus()))
+                .count();
+
+        String assignedStatus = (confirmedCount < maxCap) ? "CONFIRMED" : "WAITING";
+
+        // Check if this officer already exists in the programme
         Officer finalOfficer = officer;
-        Nomination existingNom = existingList.stream()
+        Nomination existingNom = allNominations.stream()
                 .filter(n -> n.getOfficer() != null && n.getOfficer().getOfficerId().equals(finalOfficer.getOfficerId()))
                 .findFirst()
                 .orElse(null);
 
-        // Count current confirmed seats
-        long confirmedCount = nominationRepository.countByProgrammeAndStatus(programme, "CONFIRMED");
-        int maxCap = (programme.getMaxParticipants() != null) ? programme.getMaxParticipants() : 3;
-
-        String assignedStatus = (confirmedCount < maxCap) ? "CONFIRMED" : "WAITING";
-
         if (existingNom != null) {
-            // Re-activate if was cancelled, or return existing
-            if ("CANCELLED".equals(existingNom.getStatus())) {
+            if ("CANCELLED".equalsIgnoreCase(existingNom.getStatus())) {
                 existingNom.setStatus(assignedStatus);
                 existingNom.setNominatedAt(LocalDateTime.now());
                 return nominationRepository.save(existingNom);
@@ -103,7 +107,7 @@ public class NominationService {
         Nomination nomination = nominationRepository.findById(nominationId)
                 .orElseThrow(() -> new RuntimeException("Nomination not found with ID: " + nominationId));
 
-        boolean wasConfirmed = "CONFIRMED".equals(nomination.getStatus());
+        boolean wasConfirmed = "CONFIRMED".equalsIgnoreCase(nomination.getStatus());
         nomination.setStatus("CANCELLED");
         nominationRepository.save(nomination);
 
@@ -121,12 +125,36 @@ public class NominationService {
         return nomination;
     }
 
-    // 3. Get all nominations for a programme
+    // 3. Get all nominations for a programme with FIFO consistency check
+    @Transactional
     public List<Nomination> getNominationsByProgramme(Long programId) {
         TrainingProgramme programme = programmeRepository.findById(programId)
                 .orElseGet(() -> programmeRepository.findAll().stream().findFirst().orElse(null));
 
         if (programme == null) return List.of();
-        return nominationRepository.findByProgrammeOrderByNominatedAtAsc(programme);
+
+        List<Nomination> list = nominationRepository.findByProgrammeOrderByNominatedAtAsc(programme);
+        int maxCap = (programme.getMaxParticipants() != null) ? programme.getMaxParticipants() : 3;
+
+        // Auto-correct any legacy/inconsistent data strictly to maxCap
+        long confirmedCount = 0;
+        for (Nomination n : list) {
+            if ("CANCELLED".equalsIgnoreCase(n.getStatus())) continue;
+
+            if (confirmedCount < maxCap) {
+                if (!"CONFIRMED".equalsIgnoreCase(n.getStatus())) {
+                    n.setStatus("CONFIRMED");
+                    nominationRepository.save(n);
+                }
+                confirmedCount++;
+            } else {
+                if (!"WAITING".equalsIgnoreCase(n.getStatus())) {
+                    n.setStatus("WAITING");
+                    nominationRepository.save(n);
+                }
+            }
+        }
+
+        return list;
     }
 }

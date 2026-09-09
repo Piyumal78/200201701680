@@ -54,7 +54,7 @@ async function nominate(e) {
   }
 
   // Local fallback
-  const confCount = nominationsList.filter(n => isConfirmed(n.status)).length;
+  const confCount = nominationsList.filter(n => n.status === 'CONFIRMED').length;
   nominationsList.push({
     id: Date.now(),
     officerName: name,
@@ -92,10 +92,6 @@ async function cancel(id) {
   }
 }
 
-function isConfirmed(status) {
-  return status === 'CONFIRMED' || status === 'APPROVED' || status === 'SUBMITTED';
-}
-
 // 4. Tab Switching
 function switchTab(tab) {
   document.getElementById('btnTab1').className = tab === 'conf' ? 'tab active' : 'tab';
@@ -116,8 +112,8 @@ function resetAll() {
 
 // 6. Render UI
 function render() {
-  const conf = nominationsList.filter(n => isConfirmed(n.status));
-  const wait = nominationsList.filter(n => n.status === 'WAITING');
+  const conf = nominationsList.filter(n => n.status === 'CONFIRMED');
+  const wait = nominationsList.filter(n => n.status === 'WAITING' || n.status === 'WAITING_LIST');
 
   // Stats & Progress
   document.getElementById('confCount').innerText = conf.length;
@@ -125,7 +121,9 @@ function render() {
   document.getElementById('tabConfNum').innerText = conf.length;
   document.getElementById('tabWaitNum').innerText = wait.length;
   document.getElementById('capText').innerHTML = `<strong>${conf.length} / ${MAX_CAPACITY}</strong>`;
-  document.getElementById('barFill').style.width = `${Math.min(100, Math.round((conf.length / MAX_CAPACITY) * 100))}%`;
+  
+  const percent = Math.min(100, Math.round((conf.length / MAX_CAPACITY) * 100));
+  document.getElementById('barFill').style.width = `${percent}%`;
 
   // Confirmed Table
   const confBody = document.getElementById('confList');
