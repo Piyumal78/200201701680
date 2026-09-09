@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training Eligibility System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+    <h2>Training Eligibility Checker</h2>
+    <p class="subtitle">Check if an officer is eligible for a training programme.</p>
+
+    <!-- Main Card -->
+    <div class="card">
+      <form onsubmit="handleCheck(event)">
+        
+        <!-- 1. Select Training -->
+        <div class="form-group">
+          <label>1. Select Training Programme:</label>
+          <select id="trainingSelect" onchange="onTrainingSelect()">
+            <option value="1">Financial Management Programme</option>
+            <option value="2">Technical Programme</option>
+            <option value="3">Management Development Programme</option>
+          </select>
+        </div>
+
+        <!-- Training Requirements Box -->
+        <div class="info-box" id="trainingRulesBox">
+          <strong>Eligibility Requirements:</strong>
+          <p id="ruleText">Allowed Departments: Finance, Budget, Planning</p>
+        </div>
+
+        <!-- 2. Select Officer -->
+        <div class="form-group" style="margin-top: 15px;">
+          <label>2. Select Officer:</label>
+          <select id="officerSelect" onchange="onOfficerSelect()">
+            <!-- Populated from JavaScript / Database -->
+          </select>
+        </div>
+
+        <!-- Officer Profile Details Table -->
+        <table class="details-table">
+          <tr>
+            <td><strong>Department:</strong></td>
+            <td id="dispDept">Finance</td>
+          </tr>
+          <tr>
+            <td><strong>Grade:</strong></td>
+            <td id="dispGrade">Grade III</td>
+          </tr>
+          <tr>
+            <td><strong>Years of Service:</strong></td>
+            <td id="dispService">6 Years</td>
+          </tr>
+          <tr>
+            <td><strong>Previous Participation:</strong></td>
+            <td id="dispParticipation">None in last 12 months</td>
+          </tr>
+        </table>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-primary">Check Eligibility</button>
+      </form>
+    </div>
+
+    <!-- Result Card -->
+    <div class="card" id="resultCard" style="display: none;">
+      <h3>Eligibility Result</h3>
+      <div id="resultBox" class="result-box">
+        <div id="resultMessage" class="result-title"></div>
+        <div id="resultReason" class="result-reason"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
