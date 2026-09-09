@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training Capacity System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Programme Header Card -->
+    <div class="card">
+      <h2>Cybersecurity Awareness Programme</h2>
+      <p class="sub">📅 15 Oct 2026 &nbsp;|&nbsp; 📍 Main Auditorium</p>
+      
+      <div class="capacity-bar-wrap">
+        <div class="capacity-label">
+          <span>Capacity</span>
+          <span id="capText"><strong>0 / 3</strong></span>
+        </div>
+        <div class="bar-bg">
+          <div id="barFill" class="bar-fill"></div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <span>Confirmed: <strong id="confCount" class="text-green">0</strong></span>
+        <span>Waiting List: <strong id="waitCount" class="text-amber">0</strong></span>
+      </div>
+    </div>
+
+    <!-- Nominate Form -->
+    <div class="card">
+      <form onsubmit="nominate(event)">
+        <input type="text" id="officerName" placeholder="Officer Name (e.g. A. Perera)" required>
+        <button type="submit" class="btn btn-blue">Submit</button>
+        <button type="button" class="btn btn-purple" onclick="loadDemo()">Demo</button>
+        <button type="button" class="btn btn-gray" onclick="resetAll()">Reset</button>
+      </form>
+    </div>
+
+    <!-- Tabs: Confirmed / Waiting -->
+    <div class="card">
+      <div class="tabs">
+        <button id="btnTab1" class="tab active" onclick="switchTab('conf')">Confirmed Participants (<span id="tabConfNum">0</span>)</button>
+        <button id="btnTab2" class="tab" onclick="switchTab('wait')">Waiting List (<span id="tabWaitNum">0</span>)</button>
+      </div>
+
+      <!-- Confirmed Table -->
+      <div id="viewConf">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Officer</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="confList">
+            <tr><td colspan="5" class="empty">No confirmed participants yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Waiting List Table -->
+      <div id="viewWait" style="display: none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Queue</th>
+              <th>Officer</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="waitList">
+            <tr><td colspan="4" class="empty">Waiting list is empty.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
