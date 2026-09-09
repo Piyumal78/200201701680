@@ -1,5 +1,5 @@
 // ==========================================================================
-// SIMPLE TRAINING MANAGEMENT SYSTEM (TMS)
+// SIMPLE TRAINING MANAGEMENT SYSTEM (TMS) - CLIENT SCRIPT
 // ==========================================================================
 
 let currentRole = 'ADMIN';
@@ -31,7 +31,7 @@ const officers = [
   { id: 104, empNo: 'EMP-104', name: 'Emily Watson', email: 'emily@tms.gov', deptId: 2, designation: 'Accountant' }
 ];
 
-// Operational Data (Starts Empty - No Mock Records)
+// Operational Records
 const programmes = [];
 const nominations = [];
 
@@ -63,28 +63,34 @@ function populateDropdowns() {
   }
 }
 
-function showTab(tabId) {
-  document.querySelectorAll('.tab-page').forEach(page => page.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+// Tab Switching
+function openTab(tabId) {
+  document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-link').forEach(el => el.classList.remove('active'));
 
-  document.getElementById(tabId).classList.add('active');
-  if (event && event.target) {
-    event.target.classList.add('active');
+  const targetPane = document.getElementById(tabId);
+  if (targetPane) targetPane.classList.add('active');
+
+  if (event && event.currentTarget) {
+    event.currentTarget.classList.add('active');
   }
 }
 
+// Role Change
 function changeRole() {
   currentRole = document.getElementById('roleSelect').value;
   renderProgrammes();
   renderNominations();
 }
 
-function toggleForm(formId) {
-  const form = document.getElementById(formId);
-  form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+// Toggle element display
+function toggleElement(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
 }
 
-// CONFLICT PREVENTION ENGINE
+// Conflict Prevention Engine
 function checkConflict() {
   const startDate = document.getElementById('pStartDate').value;
   const endDate = document.getElementById('pEndDate').value;
@@ -141,6 +147,7 @@ function checkConflict() {
   }
 }
 
+// Save Programme
 function saveProgramme() {
   const title = document.getElementById('pTitle').value;
   const startDate = document.getElementById('pStartDate').value;
@@ -152,7 +159,7 @@ function saveProgramme() {
   const maxCapacity = parseInt(document.getElementById('pCapacity').value) || 40;
 
   if (!title || !startDate || !endDate || !venueId || !trainerId) {
-    alert('Please fill all required fields!');
+    alert('Please complete all required fields.');
     return;
   }
 
@@ -172,17 +179,18 @@ function saveProgramme() {
   };
 
   programmes.push(newProg);
-  toggleForm('createProgFormCard');
+  toggleElement('createProgBox');
   renderProgrammes();
   alert('Programme created successfully!');
 }
 
+// Render Programmes Table
 function renderProgrammes() {
   const tbody = document.getElementById('programmesTable');
   tbody.innerHTML = '';
 
   if (programmes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888;">No training programmes created yet. Click "+ Add New Programme" above to create one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#6b7280; padding:16px;">No training programmes created yet. Click "+ Create Programme" to add one.</td></tr>`;
     return;
   }
 
@@ -193,18 +201,18 @@ function renderProgrammes() {
 
     let actionBtn = '';
     if (currentRole === 'ADMIN') {
-      actionBtn = `<button class="btn btn-secondary btn-sm" onclick="cancelProgramme(${p.id})">Cancel</button>`;
+      actionBtn = `<button class="btn btn-light btn-sm" onclick="cancelProgramme(${p.id})">Cancel</button>`;
     } else if (currentRole === 'DEPT_HEAD') {
       actionBtn = `<button class="btn btn-primary btn-sm" onclick="openNominationForm(${p.id})">+ Nominate</button>`;
     } else {
-      actionBtn = `<span style="color:#666;">View Only</span>`;
+      actionBtn = `<span style="color:#9ca3af;">View Only</span>`;
     }
 
     tbody.innerHTML += `
       <tr>
-        <td>#PROG-${p.id}</td>
+        <td><strong>#P-${p.id}</strong></td>
         <td><strong>${p.title}</strong></td>
-        <td>${p.startDate} (${p.startTime} - ${p.endTime})</td>
+        <td>${p.startDate} <small style="color:#6b7280;">(${p.startTime} - ${p.endTime})</small></td>
         <td>${venue ? venue.name : ''}</td>
         <td>${trainer ? trainer.name : ''}</td>
         <td>${nomCount} / ${p.maxCapacity}</td>
@@ -215,15 +223,13 @@ function renderProgrammes() {
   });
 }
 
+// Render Nominations Table
 function renderNominations() {
   const tbody = document.getElementById('nominationsTable');
   tbody.innerHTML = '';
 
-  const summaryBox = document.getElementById('quotaSummaryBox');
-  summaryBox.innerHTML = `<strong>Rule:</strong> Max <strong>${DEFAULT_DEPT_QUOTA} seats</strong> per department. Duplicate officer nominations per programme are strictly blocked.`;
-
   if (nominations.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">No nominations submitted yet. Switch role to "Department Head" to submit officer nominations.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#6b7280; padding:16px;">No nominations submitted yet. Switch role to "Department Head" to nominate officers.</td></tr>`;
     return;
   }
 
@@ -238,14 +244,14 @@ function renderNominations() {
     } else if (currentRole === 'TRAINER' && n.status === 'APPROVED') {
       actionBtn = `<button class="btn btn-primary btn-sm" onclick="markAttended(${n.id})">Mark Attended</button>`;
     } else {
-      actionBtn = `<span style="color:#888;">Done</span>`;
+      actionBtn = `<span style="color:#9ca3af;">Done</span>`;
     }
 
     tbody.innerHTML += `
       <tr>
-        <td>#NOM-${n.id}</td>
+        <td><strong>#NOM-${n.id}</strong></td>
         <td>${p ? p.title : ''}</td>
-        <td><strong>${o ? o.name : ''}</strong> (${o ? o.empNo : ''})</td>
+        <td><strong>${o ? o.name : ''}</strong> <small style="color:#6b7280;">(${o ? o.empNo : ''})</small></td>
         <td>${d ? d.code : ''}</td>
         <td><span class="badge badge-${n.status.toLowerCase()}">${n.status}</span></td>
         <td>${actionBtn}</td>
@@ -254,6 +260,7 @@ function renderNominations() {
   });
 }
 
+// Render Officers Directory
 function renderOfficers() {
   const tbody = document.getElementById('officersTable');
   const searchInput = document.getElementById('officerSearch');
@@ -275,7 +282,7 @@ function renderOfficers() {
         <td>${o.email}</td>
         <td>${d ? d.name : ''}</td>
         <td>${o.designation}</td>
-        <td>${attendedCount} Completed</td>
+        <td><span class="badge badge-approved">${attendedCount} Completed</span></td>
       </tr>
     `;
   });
@@ -295,15 +302,16 @@ function openNominationForm(programId) {
     select.innerHTML += `<option value="${o.id}">${o.name} (${o.empNo})</option>`;
   });
 
-  document.getElementById('quotaAlert').style.display = 'none';
-  toggleForm('nominationFormCard');
+  document.getElementById('nominationAlert').style.display = 'none';
+  toggleElement('nominationBox');
 }
 
+// Submit Nomination (With Duplicate & Quota Validation)
 function submitNomination() {
   const officerId = parseInt(document.getElementById('nomOfficerSelect').value);
   if (!officerId) return;
 
-  const alertBox = document.getElementById('quotaAlert');
+  const alertBox = document.getElementById('nominationAlert');
 
   // 1. Duplicate Check
   const isDuplicate = nominations.some(n => n.programId === selectedProgIdForNom && n.officerId === officerId);
@@ -318,7 +326,7 @@ function submitNomination() {
   const currentDeptNoms = nominations.filter(n => n.programId === selectedProgIdForNom && n.deptId === userDeptId).length;
 
   if (currentDeptNoms >= DEFAULT_DEPT_QUOTA) {
-    alertBox.innerText = `❌ Quota Limit Exceeded! Department cannot nominate more than ${DEFAULT_DEPT_QUOTA} officers.`;
+    alertBox.innerText = `❌ Quota Limit Exceeded! Department cannot exceed ${DEFAULT_DEPT_QUOTA} seats.`;
     alertBox.style.display = 'block';
     return;
   }
@@ -334,7 +342,7 @@ function submitNomination() {
   };
 
   nominations.push(newNom);
-  toggleForm('nominationFormCard');
+  toggleElement('nominationBox');
   renderNominations();
   alert('Nomination submitted successfully!');
 }
