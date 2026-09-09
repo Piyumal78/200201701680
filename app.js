@@ -1,14 +1,14 @@
 // ==========================================================
-// TASK 2: CONNECTED TO SPRING BOOT MYSQL / H2 DATABASE
+// TASK 2: LIMITED TRAINING CAPACITY (STRICT FIFO ALLOCATION)
 // ==========================================================
 
 const API_BASE = 'http://localhost:8080/api';
 const PROGRAM_ID = 1;
-const MAX_CAPACITY = 3;
+const MAX_CAPACITY = 3; // Standard Capacity for Demo
 
 let nominationsList = [];
 
-// Initialize & load data directly from Database on page load
+// Initialize & load data on startup
 document.addEventListener('DOMContentLoaded', () => {
   fetchNominationsFromDB();
 });
@@ -27,7 +27,7 @@ async function fetchNominationsFromDB() {
   }
 }
 
-// 2. Submit Nomination to Database
+// 2. Submit Nomination
 async function nominate(e) {
   e.preventDefault();
   const input = document.getElementById('officerName');
@@ -54,20 +54,19 @@ async function nominate(e) {
   }
 
   // Local fallback
-  const confCount = nominationsList.filter(n => n.status === 'CONFIRMED').length;
   nominationsList.push({
     id: Date.now(),
     officerName: name,
     department: 'IT',
     nominatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    status: confCount < MAX_CAPACITY ? 'CONFIRMED' : 'WAITING'
+    status: 'ACTIVE'
   });
 
   input.value = '';
   render();
 }
 
-// 3. Cancel Seat in Database & Trigger Auto-Promotion
+// 3. Cancel Seat & Auto-Promote
 async function cancel(id) {
   try {
     const res = await fetch(`${API_BASE}/nominations/${id}/cancel`, {
@@ -86,8 +85,6 @@ async function cancel(id) {
   const item = nominationsList.find(n => n.id === id);
   if (item) {
     item.status = 'CANCELLED';
-    const next = nominationsList.find(n => n.status === 'WAITING');
-    if (next) next.status = 'CONFIRMED';
     render();
   }
 }
@@ -100,9 +97,16 @@ function switchTab(tab) {
   document.getElementById('viewWait').style.display = tab === 'wait' ? 'block' : 'none';
 }
 
-// 5. Reload from DB
+// 5. Demo & Reset
 function loadDemo() {
-  fetchNominationsFromDB();
+  nominationsList = [
+    { id: 101, officerName: 'A. Perera', department: 'IT', nominatedAt: '09:01 AM', status: 'ACTIVE' },
+    { id: 102, officerName: 'B. Silva', department: 'FIN', nominatedAt: '09:03 AM', status: 'ACTIVE' },
+    { id: 103, officerName: 'C. Fernando', department: 'HRM', nominatedAt: '09:05 AM', status: 'ACTIVE' },
+    { id: 104, officerName: 'D. Jayawardena', department: 'OPS', nominatedAt: '09:08 AM', status: 'ACTIVE' },
+    { id: 105, officerName: 'E. Watson', department: 'IT', nominatedAt: '09:12 AM', status: 'ACTIVE' }
+  ];
+  render();
 }
 
 function resetAll() {
@@ -110,25 +114,31 @@ function resetAll() {
   render();
 }
 
-// 6. Render UI
+// 6. STRICT FIFO RENDER ENGINE
 function render() {
-  const conf = nominationsList.filter(n => n.status === 'CONFIRMED');
-  const wait = nominationsList.filter(n => n.status === 'WAITING' || n.status === 'WAITING_LIST');
+  // Filter only active nominations (exclude CANCELLED)
+  const activeList = nominationsList.filter(n => n.status !== 'CANCELLED');
 
-  // Stats & Progress
+  // STRICT FIFO LOGIC:
+  // First MAX_CAPACITY (3) are ALWAYS CONFIRMED
+  // Everything from index 3 onwards is ALWAYS WAITING LIST
+  const conf = activeList.slice(0, MAX_CAPACITY);
+  const wait = activeList.slice(MAX_CAPACITY);
+
+  // Update Counters
   document.getElementById('confCount').innerText = conf.length;
   document.getElementById('waitCount').innerText = wait.length;
   document.getElementById('tabConfNum').innerText = conf.length;
   document.getElementById('tabWaitNum').innerText = wait.length;
   document.getElementById('capText').innerHTML = `<strong>${conf.length} / ${MAX_CAPACITY}</strong>`;
-  
+
   const percent = Math.min(100, Math.round((conf.length / MAX_CAPACITY) * 100));
   document.getElementById('barFill').style.width = `${percent}%`;
 
-  // Confirmed Table
+  // Render Confirmed Table (Max 3)
   const confBody = document.getElementById('confList');
   if (conf.length === 0) {
-    confBody.innerHTML = `<tr><td colspan="5" class="empty">No confirmed participants in database.</td></tr>`;
+    confBody.innerHTML = `<tr><td colspan="5" class="empty">No confirmed participants yet.</td></tr>`;
   } else {
     confBody.innerHTML = conf.map((n, i) => `
       <tr>
@@ -141,14 +151,14 @@ function render() {
     `).join('');
   }
 
-  // Waiting Table
+  // Render Waiting Table (All 4th, 5th, ... 28th participants)
   const waitBody = document.getElementById('waitList');
   if (wait.length === 0) {
-    waitBody.innerHTML = `<tr><td colspan="4" class="empty">Waiting list is empty in database.</td></tr>`;
+    waitBody.innerHTML = `<tr><td colspan="4" class="empty">Waiting list is empty.</td></tr>`;
   } else {
     waitBody.innerHTML = wait.map((n, i) => `
       <tr>
-        <td>#${i + 1}</td>
+        <td>Queue #${i + 1}</td>
         <td><strong>${n.officerName || n.name}</strong> <small style="color:#64748b">(${n.department || 'OPS'})</small></td>
         <td>${formatTime(n.nominatedAt || n.time)}</td>
         <td><span class="badge badge-wait">WAITING</span></td>
