@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="header-title">
+      <h1>Training Management System (TMS)</h1>
+      <p>Public Sector Training & Nomination System</p>
+    </div>
+    
+    <!-- User Role Selector -->
+    <div class="role-selector">
+      <label>Current Role:</label>
+      <select id="roleSelect" onchange="changeRole()">
+        <option value="ADMIN">Training Coordinator (Admin)</option>
+        <option value="DEPT_HEAD">Department Head</option>
+        <option value="OFFICER">Officer / Trainee</option>
+        <option value="TRAINER">Trainer</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="showTab('programmesTab')">Programmes & Scheduling</button>
+      <button class="tab-btn" onclick="showTab('nominationsTab')">Nominations & Quotas</button>
+      <button class="tab-btn" onclick="showTab('officersTab')">Officer Directory</button>
+      <button class="tab-btn" onclick="showTab('schemaTab')">Database Schema</button>
+    </div>
+
+    <!-- TAB 1: PROGRAMMES -->
+    <div id="programmesTab" class="tab-page active">
+      <div class="card">
+        <div class="card-header">
+          <h2>Training Programmes</h2>
+          <button class="btn btn-primary" id="addProgBtn" onclick="toggleForm('createProgFormCard')">+ Add New Programme</button>
+        </div>
+
+        <!-- Add Programme Form -->
+        <div id="createProgFormCard" class="form-box" style="display: none;">
+          <h3>Create Programme (With Conflict Check)</h3>
+          <div id="conflictAlert" class="alert error" style="display: none;"></div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Title:</label>
+              <input type="text" id="pTitle" placeholder="e.g. Cybersecurity Essentials">
+            </div>
+            <div class="form-group">
+              <label>Start Date:</label>
+              <input type="date" id="pStartDate" onchange="checkConflict()">
+            </div>
+            <div class="form-group">
+              <label>End Date:</label>
+              <input type="date" id="pEndDate" onchange="checkConflict()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Time:</label>
+              <input type="time" id="pStartTime" value="09:00" onchange="checkConflict()">
+            </div>
+            <div class="form-group">
+              <label>End Time:</label>
+              <input type="time" id="pEndTime" value="16:00" onchange="checkConflict()">
+            </div>
+            <div class="form-group">
+              <label>Venue:</label>
+              <select id="pVenue" onchange="checkConflict()"></select>
+            </div>
+            <div class="form-group">
+              <label>Trainer:</label>
+              <select id="pTrainer" onchange="checkConflict()"></select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Max Capacity:</label>
+              <input type="number" id="pCapacity" value="40" min="10" max="200">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-success" id="saveProgBtn" onclick="saveProgramme()">Save Programme</button>
+            <button class="btn btn-secondary" onclick="toggleForm('createProgFormCard')">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Programme Title</th>
+              <th>Date & Time</th>
+              <th>Venue</th>
+              <th>Trainer</th>
+              <th>Nominated / Max</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="programmesTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: NOMINATIONS -->
+    <div id="nominationsTab" class="tab-page">
+      <div class="card">
+        <div class="card-header">
+          <h2>Department Nominations</h2>
+        </div>
+
+        <!-- Department Quotas Summary -->
+        <div id="quotaSummaryBox" class="quota-box"></div>
+
+        <!-- Add Nomination Form -->
+        <div id="nominationFormCard" class="form-box" style="display: none;">
+          <h3>Submit Officer Nomination</h3>
+          <div id="quotaAlert" class="alert error" style="display: none;"></div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Programme:</label>
+              <input type="text" id="nomProgTitle" disabled>
+            </div>
+            <div class="form-group">
+              <label>Select Officer:</label>
+              <select id="nomOfficerSelect"></select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-success" onclick="submitNomination()">Submit Nomination</button>
+            <button class="btn btn-secondary" onclick="toggleForm('nominationFormCard')">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <table>
+          <thead>
+            <tr>
+              <th>Nom ID</th>
+              <th>Programme</th>
+              <th>Officer Name</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="nominationsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: OFFICERS -->
+    <div id="officersTab" class="tab-page">
+      <div class="card">
+        <div class="card-header">
+          <h2>Officer Directory</h2>
+          <input type="text" id="officerSearch" placeholder="Search by name or emp no..." onkeyup="renderOfficers()">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Emp No</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Designation</th>
+              <th>Completed Trainings</th>
+            </tr>
+          </thead>
+          <tbody id="officersTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: SCHEMA -->
+    <div id="schemaTab" class="tab-page">
+      <div class="card">
+        <h2>Relational Database Tables</h2>
+        <p style="color: #666; margin-bottom: 15px;">Simple overview of database schema defined in prompt:</p>
+        
+        <div class="schema-grid">
+          <div class="schema-card">
+            <h3>departments</h3>
+            <p><strong>dept_id</strong> (PK), dept_name, dept_code</p>
+          </div>
+          <div class="schema-card">
+            <h3>officers</h3>
+            <p><strong>officer_id</strong> (PK), emp_no, full_name, email, dept_id (FK), designation, role</p>
+          </div>
+          <div class="schema-card">
+            <h3>venues</h3>
+            <p><strong>venue_id</strong> (PK), venue_name, capacity, location</p>
+          </div>
+          <div class="schema-card">
+            <h3>trainers</h3>
+            <p><strong>trainer_id</strong> (PK), full_name, trainer_type, email, contact_no</p>
+          </div>
+          <div class="schema-card">
+            <h3>training_programmes</h3>
+            <p><strong>program_id</strong> (PK), title, start_date, end_date, venue_id (FK), trainer_id (FK), max_participants, status</p>
+          </div>
+          <div class="schema-card">
+            <h3>programme_quotas & nominations</h3>
+            <p><strong>programme_quotas:</strong> program_id, dept_id, allocated_quota<br><strong>nominations:</strong> nomination_id (PK), program_id, officer_id, status</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
